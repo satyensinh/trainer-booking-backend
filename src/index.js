@@ -104,6 +104,66 @@ app.post('/book', upload.single('outline'), async (req, res) => {
   }
 });
 
+// ── PROFILE ──
+// Get profile
+app.get('/profile', async (req, res) => {
+  const profile = await prisma.trainerProfile.findFirst();
+  res.json(profile || {});
+});
+// Update profile (with optional photo upload)
+app.put('/profile', upload.single('photo'), async (req, res) => {
+  const { name, bio } = req.body;
+  let photoPath;
+  if (req.file) {
+    const target = `uploads/${Date.now()}-${req.file.originalname}`;
+    fs.renameSync(req.file.path, target);
+    photoPath = target;
+  }
+  const updated = await prisma.trainerProfile.upsert({
+    where: { id: 1 },
+    create: { name, bio, photoPath },
+    update: { name, bio, ...(photoPath && { photoPath }) }
+  });
+  res.json(updated);
+});
+
+// ── GALLERY ──
+// List images
+app.get('/gallery', async (req, res) => {
+  const images = await prisma.galleryImage.findMany({ orderBy: { uploadedAt: 'desc' } });
+  res.json(images);
+});
+// Upload image
+app.post('/gallery', upload.single('image'), async (req, res) => {
+  const caption = req.body.caption || null;
+  const target = `uploads/gallery/${Date.now()}-${req.file.originalname}`;
+  fs.renameSync(req.file.path, target);
+  const img = await prisma.galleryImage.create({
+    data: { imagePath: target, caption }
+  });
+  res.status(201).json(img);
+});
+
+// ── BLOGS ──
+// List posts
+app.get('/blogs', async (_req, res) => {
+  const posts = await prisma.blogPost.findMany({ orderBy: { publishedAt: 'desc' } });
+  res.json(posts);
+});
+// Get single post by slug
+app.get('/blogs/:slug', async (req, res) => {
+  const post = await prisma.blogPost.findUnique({ where: { slug: req.params.slug } });
+  if (!post) return res.status(404).end();
+  res.json(post);
+});
+// Create post
+app.post('/blogs', express.json(), async (req, res) => {
+  const { title, slug, content } = req.body;
+  const post = await prisma.blogPost.create({ data: { title, slug, content } });
+  res.status(201).json(post);
+});
+
+
 // start server
 const PORT = 3001
 app.listen(PORT, () => {

@@ -19,3 +19,24 @@ model Booking {
   outlinePath String?
   createdAt   DateTime @default(now())
 }
+model TrainerProfile {
+  id        Int      @id @default(autoincrement())
+  name      String
+  bio       String
+  photoPath String?  
+}
+
+model GalleryImage {
+  id         Int      @id @default(autoincrement())
+  imagePath  String
+  caption    String?
+  uploadedAt DateTime @default(now())
+}
+
+model BlogPost {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String
+  publishedAt DateTime @default(now())
+}
